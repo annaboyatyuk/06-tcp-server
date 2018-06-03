@@ -37,6 +37,8 @@ server.on('connection', (socket) => {
       - @ll <writes a message to all users>
       - @nickname <change username>
       - @list <shows a list of users>
+      - @dm [username] <send a direct message to user>
+      - @quit <leave the chat>
   `);
 });
 
@@ -61,8 +63,8 @@ let dispatcher = (userId, buffer) => {
 
 
 eventEmitter.on('@all', (data, userId) => {
-  for(let connnection in socketPool) {
-    let user = socketPool[connnection];
+  for(let key in socketPool) {
+    let user = socketPool[key];
     user.socket.write(`<${socketPool[userId].nickname}>: ${data.payload}\n`);
   }
 });
@@ -71,8 +73,8 @@ eventEmitter.on('@all', (data, userId) => {
 eventEmitter.on('@list', (data, userId) => {
   let listUsers = [];
 
-  for(let connnection in socketPool) {
-    let user = socketPool[connnection];
+  for(let key in socketPool) {
+    let user = socketPool[key];
     listUsers.push('\n' + user.nickname);
   }
   socketPool[userId].socket.write(`Users: ${listUsers}\n`);
@@ -89,8 +91,8 @@ eventEmitter.on('@dm', (data, userId) => {
 
   let findUser = data.target;
 
-  for(let connnection in socketPool) {
-    let user = socketPool[connnection];
+  for(let key in socketPool) {
+    let user = socketPool[key];
 
     if(findUser === user.nickname) {
 
@@ -103,19 +105,25 @@ eventEmitter.on('@dm', (data, userId) => {
 
 
 eventEmitter.on('@quit', (data, userId) => {
-
-  // let 
-
-  for(let connnection in socketPool) {
-    let user = socketPool[connnection];
-    user.socket.write(`<${user.nickname}>: has left the chat.\n`);
+  
+  let user = socketPool[userId].nickname;
+  
+  for(let key in socketPool) {
+    socketPool[key].socket.write(`<${user}>: has left the chat.\n`);
   }
+
+  socketPool[userId].socket.write(`Chat ended.\n`);
+  socketPool[userId].socket.destroy();
+  delete socketPool[userId];
+
 
 });
 
 
 
-
+server.on('error', () => {
+  console.log('Error!');
+});
 
 
 server.listen(PORT, () => {
